@@ -9,13 +9,18 @@ extern long stream_tell(void *stream);
 
 static void nop_fn(void) {};
 
+//int (*flush)(void *stream);
+//int (*ioctl)(void *stream, unsigned int cmd, void *arg);
+
 static stream_ops_t stream_ops = {
     .open   = &stream_open,
     .close  = &stream_close,
     .read   = &stream_read,
     .write  = &stream_write,
     .lseek  = &stream_lseek,
-    .tell   = &stream_tell
+    .tell   = &stream_tell,
+    .flush  = (int (*)(void *))&nop_fn,
+    .ioctl  = (int (*)(void *, unsigned int, void *))&nop_fn, 
 };
 
 void *stream_ctx_bind(stream_ctx_t *ctx, void *buf, size_t size) {

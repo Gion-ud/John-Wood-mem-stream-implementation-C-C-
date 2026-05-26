@@ -15,6 +15,8 @@ typedef struct _stream_ops {
     size_t  (*write)(void *stream, const void *buf, size_t size);
     long    (*lseek)(void *stream, long off, int origin);
     long    (*tell)(void *stream);
+	int 	(*flush)(void *stream);
+	int 	(*ioctl)(void *stream, unsigned int cmd, void *arg);
 } stream_ops_t;
 
 typedef struct _stream_ctx {
@@ -25,9 +27,10 @@ typedef struct _stream_ctx {
 } stream_ctx_t;
 
 typedef struct _file_ctx {
-	int 	fd;
-	long    pos;
-    long    len;
+	int     fd;
+	void   *addr;
+    size_t  size;
+	size_t  off;
 } file_ctx_t;
 
 typedef struct _stream {
@@ -40,6 +43,9 @@ extern void *stream_ctx_bind(stream_ctx_t *ctx, void *buf, size_t size);
 extern void stream_ctx_reset(stream_ctx_t *ctx);
 extern stream_t *stream_init(stream_t *sp);
 extern void stream_fini(stream_t *sp);
+
+// extern void *(*create_stream_ctx)(size_t size);
+// extern void (*destroy_stream_ctx)(void *ctx);
 
 #include <string.h>
 
