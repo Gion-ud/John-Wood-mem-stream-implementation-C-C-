@@ -22,14 +22,13 @@ static inline strview_t *ctsr_to_strview(
 #define BUF_SIZE 4096
 
 int main() {
-    //unsigned char buffer[BUF_SIZE] = {0};
-    stream_t *sp = create_stream();
-    assert(sp);
+    unsigned char buffer[BUF_SIZE] = {0};
+    stream_t s = {0};
+    stream_ctx_t ctx = {0};
+    stream_t *sp = stream_init(&s);
+    stream_ctx_bind(&ctx, buffer, sizeof(buffer));
 
-    void *ctx = create_memstream_ctx(BUF_SIZE);
-    assert(ctx);
-
-    int ret = sp->ops->open(sp, ctx);
+    int ret = sp->ops->open(sp, &ctx);
     assert(ret >= 0);
 
     strview_t sv = {0};
@@ -50,9 +49,10 @@ int main() {
 
     printf("%.*s\n", n, buf1);
 
-    sp->ops->close(sp);
-    destroy_memstream_ctx(ctx);
-    destroy_stream(sp);
+    ret = sp->ops->close(sp);
+    assert(ret >= 0);
+    stream_ctx_reset(&ctx);
+    stream_fini(sp);
 
     return 0;
 }
