@@ -3,18 +3,73 @@
 #include <string.h>
 #include <stdint.h>
 
+#define STRTAB_INIT_BUFSIZE 32
+#define STRTAB_INIT_TBLSIZE 4
+
 typedef struct _strtab strtab_t;
 
 extern strtab_t *create_strtab(size_t tbl_size);
 extern void destroy_strtab(strtab_t *stp);
 extern int32_t strtab_push(strtab_t *stp, const char *cstr);
 extern const char *strtab_get(strtab_t *stp, uint32_t idx);
+extern uint32_t strtab_len(strtab_t *stp);
+extern uint32_t strtab_size(strtab_t *stp);
+extern uint32_t strtab_data_len(strtab_t *stp);
+extern uint32_t strtab_data_size(strtab_t *stp);
+extern const uint32_t *strtab_offtab(strtab_t *stp);
+extern const char *strtab_data(strtab_t *stp);
+extern int strtab_resize(strtab_t *stp, size_t new_size);
+extern int is_full_strtab(strtab_t *stp);
+#define strtab_grow(stp) (strtab_resize(stp, strtab_size(stp) * 2))
+
+
+#ifdef __cplusplus
+struct cxx_strtab {
+    strtab_t *strtab_p;
+    inline cxx_strtab() : strtab_p(nullptr) {}
+    inline bool init() {
+        if (this->strtab_p) return false;
+        this->strtab_p = create_strtab(STRTAB_INIT_BUFSIZE);
+        return (!!this->strtab_p);
+    }
+    inline void destroy() {
+        if (!this->strtab_p) return;
+        destroy_strtab(this->strtab_p);
+        this->strtab_p = nullptr;
+    }
+    inline int32_t push(const char *cstr) {
+        if (!cstr) return -1;
+        if (is_full_strtab(this->strtab_p)) {
+            if (strtab_grow(this->strtab_p) < 0) return -1;
+        }
+        return strtab_push(this->strtab_p, cstr);
+    }
+    inline const char *get(uint32_t idx) {
+        return strtab_get(this->strtab_p, idx);
+    }
+    inline const char *operator[](uint32_t idx) {
+        return strtab_get(this->strtab_p, idx);
+    }
+    inline uint32_t len() {
+        return strtab_len(this->strtab_p);
+    }
+    inline const uint32_t *offtab() {
+        return strtab_offtab(this->strtab_p);
+    }
+    inline const char *data() {
+        return strtab_data(this->strtab_p);
+    }
+    inline uint32_t data_len() {
+        return strtab_data_len(this->strtab_p);
+    }
+    inline ~cxx_strtab() {
+        destroy_strtab(this->strtab_p);
+    }
+};
+#endif /* __cplusplus */
 
 #define __STRTAB_IMPLM__
 #ifdef __STRTAB_IMPLM__
-
-#define STRTAB_INIT_BUFSIZE 1
-#define STRTAB_INIT_TBLSIZE 1
 
 struct _strtab {
     char       *buf;
@@ -24,10 +79,6 @@ struct _strtab {
     uint32_t    tbl_len;
     uint32_t    tbl_size;
 };
-
-#define strtab_size(stp) ((stp)->tbl_len)
-#define strtab_data(stp) ((stp)->buf)
-#define strtab_data_len(stp) ((stp)->buf_len)
 
 #include <stdlib.h>
 #include <string.h>
@@ -62,8 +113,9 @@ fail:
         (int32_t)(stp)->buf_size - (int32_t)(stp)->buf_len\
     )
 
-#define is_full_strtab(stp) \
-    ((stp)->tbl_len >= (stp)->tbl_size)
+int is_full_strtab(strtab_t *stp) {
+    return (stp)->tbl_len >= (stp)->tbl_size;
+}
 
 int32_t strtab_push(strtab_t *stp, const char *cstr) {
     if (!is_valid_strtab(stp) || !cstr || is_full_strtab(stp))
@@ -95,11 +147,37 @@ int32_t strtab_push(strtab_t *stp, const char *cstr) {
     return cstr_idx;
 }
 
+int strtab_resize(strtab_t *stp, size_t new_size) {
+    if (!is_valid_strtab(stp) || !new_size) return -1;
+    uint32_t *new_offtab = (uint32_t*)realloc(stp->off_arr, new_size * sizeof(uint32_t));
+    if (!new_offtab) return -1;
+    stp->off_arr = new_offtab;
+    stp->tbl_size = new_size;
+    if (stp->tbl_len > new_size) stp->tbl_len = new_size;
+    return 0;
+}
+
 const char *strtab_get(strtab_t *stp, uint32_t idx) {
-    if (!is_valid_strtab(stp) || idx >= stp->tbl_len) goto fail;
+    if (!is_valid_strtab(stp) || idx >= stp->tbl_len) return NULL;
     return stp->buf + stp->off_arr[idx];
-fail:
-    return NULL;
+}
+const uint32_t *strtab_offtab(strtab_t *stp) {
+    return (!is_valid_strtab(stp)) ? NULL : stp->off_arr;
+}
+const char *strtab_data(strtab_t *stp) {
+    return (!is_valid_strtab(stp)) ? NULL : stp->buf;
+}
+uint32_t strtab_len(strtab_t *stp) {
+    return (!is_valid_strtab(stp)) ? 0 : stp->tbl_len;
+}
+uint32_t strtab_size(strtab_t *stp) {
+    return (!is_valid_strtab(stp)) ? 0 : stp->tbl_size;
+}
+uint32_t strtab_data_len(strtab_t *stp) {
+    return (!is_valid_strtab(stp)) ? 0 : stp->buf_len;
+}
+uint32_t strtab_data_size(strtab_t *stp) {
+    return (!is_valid_strtab(stp)) ? 0 : stp->buf_size;
 }
 
 #include <stdio.h>

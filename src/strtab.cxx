@@ -29,30 +29,32 @@ int main() {
 
     uint32_t strc{};
     {
-        strtab_t *stp = create_strtab(16);
-        assert(stp);
+        cxx_strtab st{};
+        st.init();
 
-        strtab_push(stp, "open");
-        strtab_push(stp, "close");
-        strtab_push(stp, "read");
-        strtab_push(stp, "write");
-        strtab_push(stp, "lseek");
-        strtab_push(stp, "mmap");
-        strtab_push(stp, "munmap");
-        strtab_push(stp, "release");
-        strtab_push(stp, "truncate");
+        st.push("open");
+        st.push("close");
+        st.push("read");
+        st.push("write");
+        st.push("lseek");
+        st.push("llseek");
+        st.push("release");
+        st.push("ftruncate");
+        st.push("fstat");
+        st.push("tell");
+        st.push("ioctl");
 
-        strc = strtab_size(stp);
+        strc = st.len();
         for (uint32_t i = 0; i < strc; ++i) {
-            std::cout << strtab_get(stp, i) << '\n';
+            std::cout << st[i] << '\n';
         }
-        std::cout << '\n';
+        std::cout << "\nstrc: " << strc << "\n\n";
 
         stream.lseek(0, SEEK_SET);
-        stream.write(stp->off_arr, stp->tbl_len * sizeof(*stp->off_arr));
-        stream.write(stp->buf, stp->buf_len);
+        stream.write(st.offtab(), strc * sizeof(*st.offtab()));
+        stream.write(st.data(), st.data_len());
 
-        destroy_strtab(stp);
+        st.destroy();
     }
 
     stream_map_t sm{};
@@ -64,7 +66,6 @@ int main() {
     for (uint32_t i = 0; i < strc; ++i) {
         std::cout << strtab_begin + reinterpret_cast<uint32_t*>(sm.addr)[i] << '\n';
     }
-
 
     stream.close(&sc);
     sc.destroy_ctx();
