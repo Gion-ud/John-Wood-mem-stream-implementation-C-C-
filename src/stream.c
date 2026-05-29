@@ -6,6 +6,7 @@ extern size_t stream_read(void *stream, void *buf, size_t size);
 extern size_t stream_write(void *stream, const void *buf, size_t size);
 extern long stream_lseek(void *stream, long off, int origin);
 extern long stream_tell(void *stream);
+extern int stream_mmap(void *stream, void *map);
 
 static void nop_fn(void) {};
 
@@ -20,7 +21,8 @@ static stream_ops_t stream_ops = {
     .lseek  = &stream_lseek,
     .tell   = &stream_tell,
     .flush  = (int (*)(void *))&nop_fn,
-    .ioctl  = (int (*)(void *, unsigned int, void *))&nop_fn, 
+    .ioctl  = (int (*)(void *, unsigned int, void *))&nop_fn,
+    .mmap   = &stream_mmap
 };
 
 void *stream_ctx_bind(stream_ctx_t *ctx, void *buf, size_t size) {
@@ -58,6 +60,15 @@ int stream_close(void *stream) {
     if (!stream) return -1;
     stream_t *_stream_p = (stream_t*)stream;
     _stream_p->ctx = NULL;
+    return 0;
+}
+int stream_mmap(void *stream, void *map) {
+    if (!stream || !map) return -1;
+    stream_ctx_t *ctx = (stream_ctx_t*)((stream_t*)stream)->ctx;
+    if (!ctx) return -1;
+    stream_map_t *_map = (stream_map_t*)map;
+    if (_map->off + _map->len > (size_t)ctx->size) return -1;
+    _map->addr = ctx->buf;
     return 0;
 }
 size_t stream_read(void *stream, void *buf, size_t size) {

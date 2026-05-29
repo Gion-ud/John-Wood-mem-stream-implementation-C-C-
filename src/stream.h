@@ -17,6 +17,7 @@ typedef struct _stream_ops {
     long    (*tell)(void *stream);
 	int 	(*flush)(void *stream);
 	int 	(*ioctl)(void *stream, unsigned int cmd, void *arg);
+	int     (*mmap)(void *stream, void *map);
 } stream_ops_t;
 
 typedef struct _stream_ctx {
@@ -33,11 +34,23 @@ typedef struct _file_ctx {
 	size_t  off;
 } file_ctx_t;
 
+typedef struct _stream_map {
+    void   *addr;
+    size_t  len;
+    long    off;
+} stream_map_t;
+
 typedef struct _stream {
     void           *ctx; // stream_ctx
     stream_ops_t   *ops;
 } stream_t;
 
+static inline void
+stream_map_init(stream_map_t *map, size_t len, long off) {
+    if (!map) return;
+    map->len = len;
+    map->off = off;
+}
 
 extern void *stream_ctx_bind(stream_ctx_t *ctx, void *buf, size_t size);
 extern void stream_ctx_reset(stream_ctx_t *ctx);

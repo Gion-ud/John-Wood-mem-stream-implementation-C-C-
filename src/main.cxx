@@ -4,25 +4,24 @@ extern "C" {
 }
 #include "stream.hpp"
 #define BUF_SIZE 4096
+#include <unistd.h>
 
 
 int main() {
     unsigned char buf1[BUF_SIZE] = {0};
-
-    stream_dev stream;
-    stream_ctx sc;
+    stream_dev stream{};
+    stream_ctx sc{};
 
     stream_t *sp = stream.create_stream();
     if (!sp) {
         puts("cannot create stream");
         return -1;
     }
-    void *ctx = sc.create_ctx(BUF_SIZE);
-    if (!ctx) {
+    if (!sc.create_ctx(BUF_SIZE)) {
         puts("cannot create stream ctx");
         return -1;
     }
-    if (stream.open(ctx) < 0) {
+    if (stream.open(&sc) < 0) {
         puts("cannot open stream ctx");
         return -1;
     }
@@ -57,7 +56,7 @@ int main() {
     assert((long)n == cur - brkpoint);
     printf("%.*s\n", n, buf1);
 
-    stream.close();
+    stream.close(&sc);
     sc.destroy_ctx();
     stream.destroy_stream();
 
