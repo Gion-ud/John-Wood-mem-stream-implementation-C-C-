@@ -3,11 +3,14 @@ all: stream.o strtab
 CFLAGS = -O2 -Wall -Wextra -Werror -fno-exceptions -fno-strict-aliasing -Wno-unused-variable
 CXXFLAGS = -fno-rtti
 
+
+CC = gcc
+
 stream.o: src/stream.c | build
-	cc -c $< -o build/$@ $(CFLAGS)
+	$(CC) -c $< -o build/$@ $(CFLAGS)
 
 main: src/main.cxx build/stream.o | bin
-	cc $^ -o bin/$@ $(CFLAGS) -Llib -lgcc -lgcc_s -lstdc++
+	$(CC) $^ -o bin/$@ $(CFLAGS) -Llib -lgcc_s -lstdc++
 
 strtab: src/strtab.cxx build/stream.o | bin
-	cc $^ -o bin/$@ $(CFLAGS) -Llib -lgcc -lgcc_s -lstdc++
+	$(CC) $^ -o bin/$@ $(CFLAGS) -Llib -lgcc_s -lstdc++
