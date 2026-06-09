@@ -122,6 +122,8 @@ long stream_lseek(void *stream, long off, int origin) {
         default:
             return -1;
     }
+    if (off < 0) _off = 0;
+    else if (off > ctx->size) _off = ctx->size;
     ctx->pos = _off;
     return ctx->pos;
 }
